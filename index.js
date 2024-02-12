@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 
 // Your MongoDB connection string
 const uri = "mongodb+srv://nimda:64yrLL7wksBj88qW@cluster0.43szltv.mongodb.net/admin?authSource=admin&replicaSet=atlas-bkga7t-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+const client = new MongoClient(uri);
 
 // Secret key for JWT signing
 const SECRET_KEY = "k:.svU0gK)N1M6Jg4l4Qxv.(iJzgCrX.l=/hv@!R*(ct(8N1ROMnnzR6D)AXImf+"; // In production, store this in an environment variable or a secure config
@@ -102,18 +102,23 @@ app.post('/addToBasket', async (req, res) => {
     jwt.verify(token, SECRET_KEY, async (err, decoded) => {
         if (err) return res.status(500).send({ message: 'Failed to authenticate token.' });
 
-        // Assuming the decoded token includes the userId
         const userId = decoded.userId;
 
         try {
             const basketsCollection = client.db("devmobile").collection("baskets");
-            // Check if the basket for the user already exists
             const basket = await basketsCollection.findOne({ userId: userId });
+
+            // Check if the basket already contains the activityId
+            if (basket && basket.activities.includes(activityId)) {
+                // If activity is already in the basket, return an error message
+                return res.status(400).send({ message: 'Activity is already in the basket' });
+            }
+
             if (basket) {
-                // If basket exists, add the activity to it
+                // If basket exists but does not contain the activity, add the activity to it
                 await basketsCollection.updateOne(
                     { userId: userId },
-                    { $push: { activities: activityId } }
+                    { $addToSet: { activities: activityId } } // Use $addToSet to ensure uniqueness
                 );
             } else {
                 // If no basket exists, create a new one with the activity
@@ -160,7 +165,7 @@ app.get('/basket', async (req, res) => {
 
 app.post('/removeFromBasket', async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
-    const { activityId } = req.body;
+    const { activityId } = req.body; // This is already a string.
 
     if (!token) return res.status(401).send({ message: 'Token is required' });
 
@@ -171,9 +176,10 @@ app.post('/removeFromBasket', async (req, res) => {
 
         try {
             const basketsCollection = client.db("devmobile").collection("baskets");
-            await basketsCollection.deleteOne(
+            // Use the activityId directly as a string
+            await basketsCollection.updateOne(
                 { userId: userId },
-                { $pull: { activities: new ObjectId(activityId) } }
+                { $pull: { activities: activityId } } // Using activityId as a string directly
             );
 
             res.status(200).send({ message: 'Activity removed from basket successfully' });
