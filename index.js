@@ -202,7 +202,7 @@ app.get('/profile', async (req, res) => {
         try {
             const usersCollection = client.db("devmobile").collection("users");
             const user = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { password: 0 } }); // Exclude password from the result
-            
+
             if (!user) return res.status(404).send({ message: 'User not found.' });
 
             res.status(200).send(user);
@@ -236,6 +236,25 @@ app.post('/profile/update', async (req, res) => {
             res.status(500).send({ message: 'Error updating user profile', error: dbError.toString() });
         }
     });
+});
+
+app.post('/register', async (req, res) => {
+    const { login, password } = req.body;
+
+    try {
+        const usersCollection = client.db("devmobile").collection("users");
+        // Check if the user already exists
+        const userExists = await usersCollection.findOne({ login });
+        if (userExists) {
+            return res.status(400).send({ message: "User already exists" });
+        }
+
+        // Create a new user with the plain text password
+        await usersCollection.insertOne({ login, password });
+        res.status(200).send({ message: "User registered successfully" });
+    } catch (e) {
+        res.status(500).send({ message: "Server error", error: e.toString() });
+    }
 });
 
 app.listen(port, () => {
