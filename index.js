@@ -190,6 +190,54 @@ app.post('/removeFromBasket', async (req, res) => {
     });
 });
 
+app.get('/profile', async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    if (!token) return res.status(401).send({ message: 'Token is required' });
+
+    jwt.verify(token, SECRET_KEY, async (err, decoded) => {
+        if (err) return res.status(500).send({ message: 'Failed to authenticate token.' });
+
+        const userId = decoded.userId;
+
+        try {
+            const usersCollection = client.db("devmobile").collection("users");
+            const user = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { password: 0 } }); // Exclude password from the result
+            
+            if (!user) return res.status(404).send({ message: 'User not found.' });
+
+            res.status(200).send(user);
+        } catch (dbError) {
+            console.error(dbError);
+            res.status(500).send({ message: 'Error fetching user profile', error: dbError.toString() });
+        }
+    });
+});
+
+app.post('/profile/update', async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    if (!token) return res.status(401).send({ message: 'Token is required' });
+
+    jwt.verify(token, SECRET_KEY, async (err, decoded) => {
+        if (err) return res.status(500).send({ message: 'Failed to authenticate token.' });
+
+        const userId = decoded.userId;
+        const { password, birthday, address, postalCode, city } = req.body; // Assuming these are the fields you want to update
+
+        try {
+            const usersCollection = client.db("devmobile").collection("users");
+            await usersCollection.updateOne(
+                { _id: new ObjectId(userId) },
+                { $set: { password, birthday, address, postalCode, city } }
+            );
+
+            res.status(200).send({ message: 'Profile updated successfully' });
+        } catch (dbError) {
+            console.error(dbError);
+            res.status(500).send({ message: 'Error updating user profile', error: dbError.toString() });
+        }
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     connectToDB();
