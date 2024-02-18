@@ -11,12 +11,11 @@ const port = 3030; // Updated port
 app.use(cors());
 app.use(bodyParser.json());
 
-// Your MongoDB connection string
 const uri = "mongodb+srv://nimda:64yrLL7wksBj88qW@cluster0.43szltv.mongodb.net/admin?authSource=admin&replicaSet=atlas-bkga7t-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true";
 const client = new MongoClient(uri);
 
 // Secret key for JWT signing
-const SECRET_KEY = "k:.svU0gK)N1M6Jg4l4Qxv.(iJzgCrX.l=/hv@!R*(ct(8N1ROMnnzR6D)AXImf+"; // In production, store this in an environment variable or a secure config
+const SECRET_KEY = "k:.svU0gK)N1M6Jg4l4Qxv.(iJzgCrX.l=/hv@!R*(ct(8N1ROMnnzR6D)AXImf+";
 
 async function connectToDB() {
     try {
@@ -223,11 +222,18 @@ app.post('/profile/update', async (req, res) => {
         const userId = decoded.userId;
         const { password, birthday, address, postalCode, city } = req.body; // Assuming these are the fields you want to update
 
+        // Initialize the update object
+        let updateObject = { birthday, address, postalCode, city };
+
+        // Only add password to the update object if it's present and not empty
+        if (password && password.trim() !== '')
+            updateObject.password = password;
+
         try {
             const usersCollection = client.db("devmobile").collection("users");
             await usersCollection.updateOne(
                 { _id: new ObjectId(userId) },
-                { $set: { password, birthday, address, postalCode, city } }
+                { $set: updateObject }
             );
 
             res.status(200).send({ message: 'Profile updated successfully' });
@@ -237,6 +243,7 @@ app.post('/profile/update', async (req, res) => {
         }
     });
 });
+
 
 app.post('/register', async (req, res) => {
     const { login, password } = req.body;
