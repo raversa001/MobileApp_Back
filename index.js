@@ -6,7 +6,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const port = 3030; // Updated port
+const port = 3030;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -14,7 +14,6 @@ app.use(bodyParser.json());
 const uri = "mongodb+srv://nimda:64yrLL7wksBj88qW@cluster0.43szltv.mongodb.net/admin?authSource=admin&replicaSet=atlas-bkga7t-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true";
 const client = new MongoClient(uri);
 
-// Secret key for JWT signing
 const SECRET_KEY = "k:.svU0gK)N1M6Jg4l4Qxv.(iJzgCrX.l=/hv@!R*(ct(8N1ROMnnzR6D)AXImf+";
 
 async function connectToDB() {
@@ -56,7 +55,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/isLoggedIn', async (req, res) => {
-    const token = req.headers.authorization.split(' ')[1]; // Assuming token is sent as "Bearer <token>"
+    const token = req.headers.authorization.split(' ')[1];
 
     if (!token || !token.length)
         return res.status(401).send({ message: 'Aucun token renvoyé' });
@@ -191,7 +190,7 @@ app.get('/profile', async (req, res) => {
 
         try {
             const usersCollection = client.db("devmobile").collection("users");
-            const user = await usersCollection.findOne({ _id: new ObjectId(userId) }); // Exclude password from the result
+            const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
             if (!user) return res.status(404).send({ message: 'Utilisateur introuvable.' });
 
