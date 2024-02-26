@@ -191,7 +191,7 @@ app.get('/profile', async (req, res) => {
 
         try {
             const usersCollection = client.db("devmobile").collection("users");
-            const user = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { password: 0 } }); // Exclude password from the result
+            const user = await usersCollection.findOne({ _id: new ObjectId(userId) }); // Exclude password from the result
 
             if (!user) return res.status(404).send({ message: 'Utilisateur introuvable.' });
 
